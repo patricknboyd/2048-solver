@@ -265,7 +265,7 @@ GameManager.prototype.evaluateMove = function () {
 
                     // If there is a merge, add its value.
                     if (next && next.value === tile.value && !next.mergedFrom) {
-                        mergeValues[dir].value++;
+                        mergeValues[dir].value += tile.value * 2;
                         mergeValues[dir].canMove = true;
                     }
                 }
