@@ -1,14 +1,19 @@
-function GameManager(size, InputManager, Actuator, StorageManager) {
+function GameManager(size, InputManager, Actuator, StorageManager, Autoplayer) {
   this.size           = size; // Size of the grid
   this.inputManager   = new InputManager;
   this.storageManager = new StorageManager;
   this.actuator       = new Actuator;
+  this.autoplayer 	  = new Autoplayer;
 
   this.startTiles     = 2;
 
-  this.inputManager.on("move", this.move.bind(this));
+  this.inputManager.on("move", this.keyboardMove.bind(this));
   this.inputManager.on("restart", this.restart.bind(this));
   this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
+  this.inputManager.on("startAutoplay", this.startAutoplay.bind(this));
+  this.inputManager.on("stopAutoplay", this.stopAutoplay.bind(this));
+  
+  this.intervalID = -1;
 
   this.setup();
 }
@@ -98,6 +103,14 @@ GameManager.prototype.actuate = function () {
 
 };
 
+GameManager.prototype.startAutoplay = function() {
+	this.autoplayer.startAutoplay(this);
+};
+
+GameManager.prototype.stopAutoplay = function() {
+	this.autoplayer.stopAutoplay();
+};
+
 // Represent the current game as an object
 GameManager.prototype.serialize = function () {
   return {
@@ -124,6 +137,15 @@ GameManager.prototype.moveTile = function (tile, cell) {
   this.grid.cells[tile.x][tile.y] = null;
   this.grid.cells[cell.x][cell.y] = tile;
   tile.updatePosition(cell);
+};
+
+GameManager.prototype.keyboardMove = function(direction) {
+	if(this.autoplayer.getIsAutoplaying()) {
+		return;
+	}
+	else {
+		this.move(direction);
+	}
 };
 
 // Move tiles on the grid in the specified direction
@@ -167,7 +189,10 @@ GameManager.prototype.move = function (direction) {
           self.score += merged.value;
 
           // The mighty 2048 tile
-          if (merged.value === 2048) self.won = true;
+          if (merged.value === 2048) {
+			self.won = true;
+			this.stopAutoplay();
+			}
         } else {
           self.moveTile(tile, positions.farthest);
         }
@@ -184,6 +209,7 @@ GameManager.prototype.move = function (direction) {
 
     if (!this.movesAvailable()) {
       this.over = true; // Game over!
+	  this.stopAutoplay();
     }
 
     this.actuate();
