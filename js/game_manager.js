@@ -3,7 +3,7 @@ function GameManager(size, InputManager, Actuator, StorageManager, Autoplayer) {
   this.inputManager   = new InputManager;
   this.storageManager = new StorageManager;
   this.actuator       = new Actuator;
-  this.autoplayer 	  = new Autoplayer;
+  this.autoplayer = new Autoplayer(this);
 
   this.startTiles     = 2;
 
@@ -104,7 +104,7 @@ GameManager.prototype.actuate = function () {
 };
 
 GameManager.prototype.startAutoplay = function() {
-	this.autoplayer.startAutoplay(this);
+	this.autoplayer.startAutoplay();
 };
 
 GameManager.prototype.stopAutoplay = function() {
@@ -214,6 +214,67 @@ GameManager.prototype.move = function (direction) {
 
     this.actuate();
   }
+};
+
+GameManager.prototype.evaluateMove = function () {
+    // 0: up, 1: right, 2: down, 3: left
+    var self = this;
+
+    if (this.isGameTerminated()) return; // Don't do anything if the game's over
+
+    var cell, tile;
+
+    // Store a value indicating the number of merges made in each direction.
+    var mergeValues = [
+        { value: 0, canMove: false },
+        { value: 0, canMove: false },
+        { value: 0, canMove: false },
+        { value: 0, canMove: false },
+    ];
+
+    // Save the current tile positions and remove merger information
+    this.prepareTiles();
+
+    var map = {
+        0: { x: 0, y: -1 }, // Up
+        1: { x: 1, y: 0 },  // Right
+        2: { x: 0, y: 1 },  // Down
+        3: { x: -1, y: 0 }   // Left
+    };
+
+    for (var dir = 0; dir < 4; dir++) {
+
+        var traversals = this.buildTraversals(map[dir]);
+
+
+        // Traverse the grid in the right direction and move tiles
+        traversals.x.forEach(function (x) {
+            traversals.y.forEach(function (y) {
+                cell = { x: x, y: y };
+                tile = self.grid.cellContent(cell);
+
+                if (tile) {
+                    var positions = self.findFarthestPosition(cell, map[dir]);
+
+                    // We need to know if there is a possible move in this direction.
+                    if(!(positions.farthest === cell)) {
+                        mergeValues[dir].canMove = true;
+                    }
+
+                    var next = self.grid.cellContent(positions.next);
+
+                    // If there is a merge, add its value.
+                    if (next && next.value === tile.value && !next.mergedFrom) {
+                        mergeValues[dir].value++;
+                        mergeValues[dir].canMove = true;
+                    }
+                }
+            });
+
+        });
+    }
+
+    return mergeValues;
 };
 
 // Get the vector representing the chosen direction

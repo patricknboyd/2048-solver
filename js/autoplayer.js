@@ -1,10 +1,10 @@
-function Autoplayer() {
+function Autoplayer(gameManager) {
 
 	this.delay = 800;
-	
 	this.intervalID = -1;
-	
 	this.isAutoplaying = false;
+
+	this.gameManager = gameManager;
 
 }
 
@@ -13,19 +13,18 @@ Autoplayer.prototype.getIsAutoplaying = function() {
 	
 };
 
-Autoplayer.prototype.startAutoplay = function(gameManager) {
+Autoplayer.prototype.startAutoplay = function() {
 	
 	if(!this.isAutoplaying) {
-		this.gameManager = gameManager;
 
-		this.intervalID = window.setInterval(this.makeRandomMovement.bind(this), this.delay);
+		this.intervalID = window.setInterval(this.makeNextMovement.bind(this), this.delay);
 		
 		this.isAutoplaying = true;
 	}
 };
 
-Autoplayer.prototype.makeRandomMovement = function(gameManager) {
-	var direction = Math.floor(Math.random() * 4);
+Autoplayer.prototype.makeNextMovement = function(gameManager) {
+    var direction = this.getNextDirection();
 	
 	this.gameManager.move(direction);
 };
@@ -38,3 +37,19 @@ Autoplayer.prototype.stopAutoplay = function() {
 		this.isAutoplaying = false;
 	}
 }
+
+Autoplayer.prototype.getNextDirection = function () {
+    var mergeValues = this.gameManager.evaluateMove();
+
+    var maxValue = -1;
+    var dir = 0;
+
+    for (var i = 0; i < 4; i++) {
+        if (mergeValues[i].canMove && mergeValues[i].value > maxValue) {
+            maxValue = mergeValues[i].value;
+            dir = i;
+        }
+    }
+
+    return dir;
+};
