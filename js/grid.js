@@ -115,3 +115,105 @@ Grid.prototype.serialize = function () {
     cells: cellState
   };
 };
+
+// Save all tile positions and remove merger info
+Grid.prototype.commitMoves = function () {
+  this.eachCell(function (x, y, tile) {
+    if (tile) {
+      tile.mergedFrom = null;
+      tile.savePosition();
+    }
+  });
+};
+
+Grid.prototype.copy = function() {
+	var gridCopy = new Grid(this.size);
+	
+	this.eachCell(function(x, y, tile) {
+		if(tile) {
+			gridCopy.cells[x][y] = new Tile({x:x, y:y}, tile.value);
+			}
+		});
+		
+	return gridCopy;
+};
+
+Grid.prototype.findFarthestPosition = function (cell, vector) {
+  var previous;
+
+  // Progress towards the vector direction until an obstacle is found
+  do {
+    previous = cell;
+    cell     = { x: previous.x + vector.x, y: previous.y + vector.y };
+  } while (this.withinBounds(cell) &&
+           this.cellAvailable(cell));
+
+  return {
+    farthest: previous,
+    next: cell // Used to check if a merge is required
+  };
+};
+
+Grid.prototype.move = function(moveVector, traversals) { 
+  // Save the current tile positions and remove merger information
+  this.commitMoves();
+  
+  var moveResult = { moved: false, score: 0, victory: false };
+  
+  var self = this;
+
+  // Traverse the grid in the right direction and move tiles
+  traversals.x.forEach(function (x) {
+    traversals.y.forEach(function (y) {
+      cell = { x: x, y: y };
+      tile = self.cellContent(cell);
+
+      if (tile) {
+        var positions = self.findFarthestPosition(cell, moveVector);
+        var next      = self.cellContent(positions.next);
+
+        // Only one merger per row traversal?
+        if (next && next.value === tile.value && !next.mergedFrom) {
+          var merged = new Tile(positions.next, tile.value * 2);
+          merged.mergedFrom = [tile, next];
+
+          self.insertTile(merged);
+          self.removeTile(tile);
+
+          // Converge the two tiles' positions
+          tile.updatePosition(positions.next);
+
+          // Update the score
+          moveResult.score += merged.value;
+
+          // The mighty 2048 tile
+          if (merged.value === 2048) {
+			moveResult.victory = true;
+			}
+        } else {
+          self.moveTile(tile, positions.farthest);
+        }
+
+        if (!self.positionsEqual(cell, tile)) {
+          moveResult.moved = true; // The tile moved from its original cell!
+        }
+      }
+    });
+  });
+  
+  return moveResult;
+  
+};
+
+
+// Move a tile and its representation
+Grid.prototype.moveTile = function (tile, cell) {
+  this.cells[tile.x][tile.y] = null;
+  this.cells[cell.x][cell.y] = tile;
+  tile.updatePosition(cell);
+};
+
+Grid.prototype.positionsEqual = function (first, second) {
+  return first.x === second.x && first.y === second.y;
+};
+
