@@ -231,3 +231,20 @@ GameManager.prototype.tileMatchesAvailable = function () {
   return false;
 };
 
+GameManager.prototype.testSetup = function() {
+
+	var self = this;
+
+	this.grid.eachCell(function(x, y, tile) {
+		if(tile) {
+			self.grid.removeTile(tile);
+		}
+		});
+		
+	this.grid.insertTile(new Tile({x:0, y: 0}, 8));
+	this.grid.insertTile(new Tile({x:1, y: 0}, 8));
+	this.grid.insertTile(new Tile({x:0, y: 1}, 8));
+	
+	this.actuate();
+};
+

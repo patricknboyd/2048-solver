@@ -1,7 +1,7 @@
 function Autoplayer(gameManager) {
 
 	this.delay = 800;
-	this.timouetID = -1;
+	this.timeoutID = -1;
 	this.isAutoplaying = false;
 	
 	this.maxMovesAhead = 4;
@@ -19,7 +19,7 @@ Autoplayer.prototype.startAutoplay = function() {
 	
 	if(!this.isAutoplaying) {
 
-		this.timouetID = window.setTimeout(this.makeNextMovement.bind(this), this.delay);
+		this.timeoutID = window.setTimeout(this.makeNextMovement.bind(this), this.delay);
 		
 		this.isAutoplaying = true;
 	}
@@ -30,13 +30,15 @@ Autoplayer.prototype.makeNextMovement = function(gameManager) {
 	
 	this.gameManager.move(direction);
 	
-	this.timeoutID = window.setTimeout(this.makeNextMovement.bind(this), this.delay);
+	if(this.isAutoplaying) {	
+		this.timeoutID = window.setTimeout(this.makeNextMovement.bind(this), this.delay);
+	}
 };
 
 Autoplayer.prototype.stopAutoplay = function() {
 	if(this.isAutoplaying) {
-		window.clearTimeout(this.timouetID);
-		timouetID = -1;
+		window.clearTimeout(this.timeoutID);
+		timeoutID = -1;
 		
 		this.isAutoplaying = false;
 	}
@@ -96,6 +98,13 @@ Autoplayer.prototype.evaluateMove = function (testGrid, movesAhead) {
     for (var dir = 0; dir < 4; dir++) {
 
         var traversals = this.gameManager.buildTraversals(map[dir]);
+		
+		// Reset merged setting.
+		testGrid.eachCell(function(x, y, tile) {
+			if(tile) {
+				tile.merged = false;
+				}
+			});
 
 
         // Traverse the grid in the right direction and move tiles
@@ -104,7 +113,7 @@ Autoplayer.prototype.evaluateMove = function (testGrid, movesAhead) {
                 cell = { x: x, y: y };
                 tile = testGrid.cellContent(cell);
 
-                if (tile) {
+                if (tile && !tile.merged) {
                     var positions = testGrid.findFarthestPosition(cell, map[dir]);
 
                     // We need to know if there is a possible move in this direction.
@@ -115,9 +124,13 @@ Autoplayer.prototype.evaluateMove = function (testGrid, movesAhead) {
                     var next = testGrid.cellContent(positions.next);
 
                     // If there is a merge, add its value.
-                    if (next && next.value === tile.value && !next.mergedFrom) {
+                    if (next && next.value === tile.value && !next.merged) {
                         mergeValues[dir].value += tile.value * 2;
                         mergeValues[dir].canMove = true;
+						
+						tile.merged = true;
+						next.merged = true;
+						
                     }
                 }
             });
