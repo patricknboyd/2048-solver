@@ -1,6 +1,6 @@
 function Autoplayer(gameManager) {
 
-	this.delay = 800;
+	this.delay = 500;
 	this.timeoutID = -1;
 	this.isAutoplaying = false;
 	
