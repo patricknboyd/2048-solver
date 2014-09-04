@@ -168,6 +168,11 @@ Autoplayer.prototype.evaluateMove = function (testGrid, movesAhead) {
 		};
 	}
 	
+	mergeValues[0].value *= 1.5;
+	mergeValues[1].value *= 0.667;
+	mergeValues[2].value *= 0.667;
+	mergeValues[3].value *= 1.5;
+	
 	var selectedDir = this.selectDirection(mergeValues);
 	
 	if(movesAhead === 0) {
